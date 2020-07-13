@@ -1,0 +1,21 @@
+version: "3"
+services:
+  mysql:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    ports:
+      - "3306:3306"
+  redis:
+    restart: always
+    container_name: redis
+    image: redis:alpine
+    ports:
+        - 6379:6379
+    volumes:
+        - $PWD/redis-data:/var/lib/redis
+        - $PWD/redis.conf:/usr/local/etc/redis/redis.conf
+
+
+    #  使用方式 docker-compose -f redis.yml up -d

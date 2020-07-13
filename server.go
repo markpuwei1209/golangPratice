@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"text/template"
 
+	"github.com/garyburd/redigo/redis" //Redis
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
@@ -40,6 +41,87 @@ func handleRequests() {
 	log.Fatal(http.ListenAndServe(":10000", myRouter))
 }
 
+func RedisTest() {
+	fmt.Println("Redis Test GO")
+	c, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		fmt.Println("conn redis failed, err:", err)
+		return
+	}
+	defer c.Close()
+	fmt.Println("Redis Connection Success")
+
+	fmt.Println("Redis Set Get Test")
+	_, err = c.Do("Set", "name", "nick")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	r, err := redis.String(c.Do("Get", "name"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(r)
+	fmt.Println("Redis Set Get Test Success")
+	fmt.Println("Redis mset mget Test")
+	_, err = c.Do("MSet", "name", "nick", "age", "18")
+	if err != nil {
+		fmt.Println("MSet error: ", err)
+		return
+	}
+
+	r2, err := redis.Strings(c.Do("MGet", "name", "age"))
+	if err != nil {
+		fmt.Println("MGet error: ", err)
+		return
+	}
+	fmt.Println(r2)
+	fmt.Println("Redis mset mget Test Success")
+
+	//hset hget test
+	_, err = c.Do("HSet", "names", "nick", "suoning")
+	if err != nil {
+		fmt.Println("hset error: ", err)
+		return
+	}
+
+	r, err = redis.String(c.Do("HGet", "names", "nick"))
+	if err != nil {
+		fmt.Println("hget error: ", err)
+		return
+	}
+	fmt.Println(r)
+
+	// expire test
+	_, err = c.Do("expire", "names", 5)
+	if err != nil {
+		fmt.Println("expire error: ", err)
+		return
+	}
+	//loop
+	// 隊列
+	_, err = c.Do("lpush", "Queue", "nick", "dawn", 9)
+	if err != nil {
+		fmt.Println("lpush error: ", err)
+		return
+	}
+	for {
+		r, err = redis.String(c.Do("lpop", "Queue"))
+		if err != nil {
+			fmt.Println("lpop error: ", err)
+			break
+		}
+		fmt.Println(r)
+	}
+	r3, err := redis.Int(c.Do("llen", "Queue"))
+	if err != nil {
+		fmt.Println("llen error: ", err)
+		return
+	}
+	fmt.Println(r3)
+}
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
@@ -51,6 +133,8 @@ func main() {
 		Article{Title: "Hello", Desc: "Article Description", Content: "Article Content"},
 		Article{Title: "Hello 2", Desc: "Article Description", Content: "Article Content"},
 	}
+
+	RedisTest()
 	handleRequests()
 }
 
